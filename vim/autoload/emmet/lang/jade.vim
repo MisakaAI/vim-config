@@ -56,6 +56,7 @@ function! emmet#lang#jade#toString(settings, current, type, inline, filters, ite
               let tmp .= ' '
             endif
           endif
+          let Val = substitute(Val, '\${cursor}', '', '')
           if attribute_style ==# 'hash'
             let tmp .= '' . attr . '="' . Val . '"'
           elseif attribute_style ==# 'html'

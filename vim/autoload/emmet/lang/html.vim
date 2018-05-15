@@ -1,7 +1,6 @@
-let s:bx = '{\%("[^"]*"\|''[^'']*''\|\$#\|\${\w\+}\|\$\+\|{[^{]\+\|[^{}]\)\{-}}'
 let s:mx = '\([+>]\|[<^]\+\)\{-}\s*'
 \     .'\((*\)\{-}\s*'
-\       .'\([@#.]\{-}[a-zA-Z_\!][a-zA-Z0-9:_\!\-$]*\|' . s:bx . '\|\[[^\]]\+\]\)'
+\       .'\([@#.]\{-}[a-zA-Z_\!][a-zA-Z0-9:_\!\-$]*\|{\%([^$}]\+\|\$#\|\${\w\+}\|\$\+\)*}*[ \t\r\n}]*\|\[[^\]]\+\]\)'
 \       .'\('
 \         .'\%('
 \           .'\%(#{[{}a-zA-Z0-9_\-\$]\+\|#[a-zA-Z0-9_\-\$]\+\)'
@@ -9,7 +8,7 @@ let s:mx = '\([+>]\|[<^]\+\)\{-}\s*'
 \           .'\|\%(\.{[{}a-zA-Z0-9_\-\$]\+\|\.[a-zA-Z0-9_\-\$]\+\)'
 \         .'\)*'
 \       .'\)'
-\       .'\%(\(' . s:bx . '\+\)\)\{0,1}'
+\       .'\%(\({\%([^$}]\+\|\$#\|\${\w\+}\|\$\+\)*}\+\)\)\{0,1}'
 \         .'\%(\(@-\{0,1}[0-9]*\)\{0,1}\*\([0-9]\+\)\)\{0,1}'
 \     .'\(\%()\%(\(@-\{0,1}[0-9]*\)\{0,1}\*[0-9]\+\)\{0,1}\)*\)'
 
@@ -18,13 +17,6 @@ function! emmet#lang#html#findTokens(str) abort
   let [pos, last_pos] = [0, 0]
   while 1
     let tag = matchstr(str, '<[a-zA-Z].\{-}>', pos)
-    if len(tag) == 0
-      break
-    endif
-    let pos = stridx(str, tag, pos) + len(tag)
-  endwhile
-  while 1
-    let tag = matchstr(str, '{%[^%]\{-}%}', pos)
     if len(tag) == 0
       break
     endif
@@ -59,31 +51,8 @@ function! emmet#lang#html#parseIntoTree(abbr, type) abort
   endif
   if len(type) == 0 | let type = 'html' | endif
 
+  let settings = emmet#getSettings()
   let indent = emmet#getIndentation(type)
-  let pmap = {
-  \'p': 'span',
-  \'ul': 'li',
-  \'ol': 'li',
-  \'table': 'tr',
-  \'tr': 'td',
-  \'tbody': 'tr',
-  \'thead': 'tr',
-  \'tfoot': 'tr',
-  \'colgroup': 'col',
-  \'select': 'option',
-  \'optgroup': 'option',
-  \'audio': 'source',
-  \'video': 'source',
-  \'object': 'param',
-  \'map': 'area'
-  \}
-
-  let inlineLevel = split('a,abbr,acronym,applet,b,basefont,bdo,big,br,button,cite,code,del,dfn,em,font,i,iframe,img,input,ins,kbd,label,map,object,q,s,samp,select,small,span,strike,strong,sub,sup,textarea,tt,u,var',',')
-
-  let custom_expands = emmet#getResource(type, 'custom_expands', {})
-  if empty(custom_expands) && has_key(settings, 'custom_expands')
-    let custom_expands = settings['custom_expands']
-  endif
 
   " try 'foo' to (foo-x)
   let rabbr = emmet#getExpandos(type, abbr)
@@ -109,14 +78,13 @@ function! emmet#lang#html#parseIntoTree(abbr, type) abort
     let basevalue = substitute(match, s:mx, '\6', 'ig')
     let multiplier = 0 + substitute(match, s:mx, '\7', 'ig')
     let block_end = substitute(match, s:mx, '\8', 'ig')
-    let custom = ''
     let important = 0
     if len(str) == 0
       break
     endif
     if tag_name =~# '^#'
       let attributes = tag_name . attributes
-      let tag_name = ''
+      let tag_name = 'div'
     endif
     if tag_name =~# '[^!]!$'
       let tag_name = tag_name[:-2]
@@ -124,42 +92,20 @@ function! emmet#lang#html#parseIntoTree(abbr, type) abort
     endif
     if tag_name =~# '^\.'
       let attributes = tag_name . attributes
-      let tag_name = ''
+      let tag_name = 'div'
     endif
     if tag_name =~# '^\[.*\]$'
       let attributes = tag_name . attributes
-      let tag_name = ''
+      let tag_name = 'div'
     endif
-
-    for k in keys(custom_expands)
-      if tag_name =~ k
-        let custom = tag_name
-        let tag_name = ''
-        break
-      endif
-    endfor
-
-    if empty(tag_name)
-      let pname = len(parent.child) > 0 ? parent.child[0].name : ''
-      if !empty(pname) && has_key(pmap, pname)
-        let tag_name = pmap[pname]
-      elseif !empty(pname) && index(inlineLevel, pname) > -1
-        let tag_name = 'span'
-      elseif len(parent.child) == 0 || len(custom) == 0
-        let tag_name = 'div'
-      else
-        let tag_name = custom
-      endif
-    endif
-
     let basedirect = basevalue[1] ==# '-' ? -1 : 1
     let basevalue = 0 + abs(basevalue[1:])
     if multiplier <= 0 | let multiplier = 1 | endif
 
     " make default node
     let current = emmet#newNode()
-
     let current.name = tag_name
+
     let current.important = important
 
     " aliases
@@ -182,10 +128,6 @@ function! emmet#lang#html#parseIntoTree(abbr, type) abort
         if use_pipe_for_cursor
           let snippet = substitute(snippet, '|', '${cursor}', 'g')
         endif
-        " just redirect to expanding
-        if type == 'html' && snippet !~ '^\s*[{\[<]'
-           return emmet#lang#html#parseIntoTree(snippet, a:type)
-        endif
         let lines = split(snippet, "\n", 1)
         call map(lines, 'substitute(v:val, "\\(    \\|\\t\\)", escape(indent, "\\\\"), "g")')
         let current.snippet = join(lines, "\n")
@@ -193,13 +135,13 @@ function! emmet#lang#html#parseIntoTree(abbr, type) abort
       endif
     endif
 
+    let custom_expands = emmet#getResource(type, 'custom_expands', {})
+    if empty(custom_expands) && has_key(settings, 'custom_expands')
+      let custom_expands = settings['custom_expands']
+    endif
     for k in keys(custom_expands)
       if tag_name =~# k
-        let current.snippet = '${' . (empty(custom) ? tag_name : custom) . '}'
-        let current.name = ''
-        break
-      elseif custom =~# k
-        let current.snippet = '${' . custom . '}'
+        let current.snippet = '${' . tag_name . '}'
         let current.name = ''
         break
       endif
@@ -263,7 +205,7 @@ function! emmet#lang#html#parseIntoTree(abbr, type) abort
         endif
         if item[0] ==# '['
           let atts = item[1:-2]
-          if matchstr(atts, '^\s*\zs[0-9a-zA-Z_\-:]\+\(="[^"]*"\|=''[^'']*''\|=[^ ''"]\+\)') ==# ''
+          if matchstr(atts, '^\s*\zs[0-9a-zA-Z-:]\+\(="[^"]*"\|=''[^'']*''\|=[^ ''"]\+\)') ==# ''
             let ks = []
 			if has_key(default_attributes, current.name)
               let dfa = default_attributes[current.name]
@@ -350,7 +292,6 @@ function! emmet#lang#html#parseIntoTree(abbr, type) abort
       if operator =~# '>'
         let last.pos += 1
       endif
-      let last.block = 1
       for n in range(len(block_start))
         let pos += [last.pos]
       endfor
@@ -373,14 +314,7 @@ function! emmet#lang#html#parseIntoTree(abbr, type) abort
             let last.pos += 1
           endif
         elseif len(n)
-          let st = 0
-          for nc in range(len(last.child))
-            if last.child[nc].block
-              let st = nc
-              break
-            endif
-          endfor
-          let cl = last.child[st :]
+          let cl = last.child
           let cls = []
           for c in range(n[1:])
             for cc in cl
@@ -392,19 +326,11 @@ function! emmet#lang#html#parseIntoTree(abbr, type) abort
             endfor
             let cls += deepcopy(cl)
           endfor
-          if st > 0
-            let last.child = last.child[:st-1] + cls
-          else
-            let last.child = cls
-          endif
+          let last.child = cls
         endif
       endfor
     endif
     let abbr = abbr[stridx(abbr, match) + len(match):]
-    if abbr == '/'
-		let g:hoge = 1
-      let current.empty = 1
-    endif
 
     if g:emmet_debug > 1
       echomsg 'str='.str
@@ -446,7 +372,6 @@ function! emmet#lang#html#toString(settings, current, type, inline, filters, ite
   let q = emmet#getResource(type, 'quote_char', '"')
   let ct = emmet#getResource(type, 'comment_type', 'both')
   let an = emmet#getResource(type, 'attribute_name', {})
-  let empty_element_suffix = emmet#getResource(type, 'empty_element_suffix', settings.html.empty_element_suffix)
 
   if emmet#useFilter(filters, 'haml')
     return emmet#lang#haml#toString(settings, current, type, inline, filters, itemno, indent)
@@ -517,33 +442,17 @@ function! emmet#lang#html#toString(settings, current, type, inline, filters, ite
           if len(Val) > 0
             let Val .= ' '
           endif
-          if _val =~# '^_'
-            if has_key(current.parent.attr, 'class')
-              let lead = current.parent.attr["class"]
-              if _val =~# '^__'
-                let Val .= lead . _val
-              else
-                let Val .= lead . ' ' . lead . _val
+          if _val =~# '^\a_'
+            let lead = _val[0]
+            let Val .= lead . ' ' .  _val
+          elseif _val =~# '^_'
+            if len(lead) == 0
+              let pattr = current.parent.attr
+              if has_key(pattr, 'class')
+                let lead = pattr['class']
               endif
-            else
-              let lead = split(vals[0], '_')[0]
-              let Val .= lead . _val
             endif
-          elseif _val =~# '^-'
-            for l in split(_val, '_')
-              if len(Val) > 0
-                let Val .= ' '
-              endif
-              let l = substitute(l, '^-', '__', '')
-              if len(lead) == 0
-                let pattr = current.parent.attr
-                if has_key(pattr, 'class')
-                  let lead = split(pattr['class'], '\s\+')[0]
-                endif
-              endif
-              let Val .= lead . l
-              let lead .= l . '_'
-            endfor
+            let Val .= lead . ' ' . lead . _val
           else
             let Val .= _val
           endif
@@ -552,11 +461,7 @@ function! emmet#lang#html#toString(settings, current, type, inline, filters, ite
       if has_key(an, attr)
         let attr = an[attr]
       endif
-      if emmet#isExtends(type, 'jsx') && Val =~ '^{.*}$'
-        let str .= ' ' . attr . '=' . Val
-      else
-        let str .= ' ' . attr . '=' . q . Val . q
-      endif
+      let str .= ' ' . attr . '=' . q . Val . q
       if emmet#useFilter(filters, 'c')
         if attr ==# 'id' | let comment .= '#' . Val | endif
         if attr ==# 'class' | let comment .= '.' . Val | endif
@@ -567,10 +472,8 @@ function! emmet#lang#html#toString(settings, current, type, inline, filters, ite
   if len(comment) > 0 && ct ==# 'both'
     let str = '<!-- ' . comment . " -->\n" . str
   endif
-  if current.empty
-    let str .= ' />'
-  elseif stridx(','.settings.html.empty_elements.',', ','.current_name.',') != -1
-    let str .= empty_element_suffix
+  if stridx(','.settings.html.empty_elements.',', ','.current_name.',') != -1
+    let str .= settings.html.empty_element_suffix
   else
     let str .= '>'
     let text = current.value[1:-2]
@@ -720,8 +623,8 @@ function! emmet#lang#html#parseTag(tag) abort
 endfunction
 
 function! emmet#lang#html#toggleComment() abort
-  let orgpos = getpos('.')
-  let curpos = getpos('.')
+  let orgpos = emmet#util#getcurpos()
+  let curpos = emmet#util#getcurpos()
   let mx = '<\%#[^>]*>'
   while 1
     let block = emmet#util#searchRegion('<!--', '-->')
@@ -739,7 +642,7 @@ function! emmet#lang#html#toggleComment() abort
       if pos1[0] == 0 && pos1[1] == 0
         return
       endif
-      let curpos = getpos('.')
+      let curpos = emmet#util#getcurpos()
       continue
     endif
     let pos1 = block[0]
@@ -884,7 +787,7 @@ function! emmet#lang#html#splitJoinTag() abort
     let tag_name = substitute(content, '^<\(/\{0,1}[a-zA-Z][a-zA-Z0-9:_\-]*\).*$', '\1', '')
     let block = [pos1, [pos1[0], pos1[1] + len(content) - 1]]
     if content[-2:] ==# '/>' && emmet#util#cursorInRegion(block)
-      let content = substitute(content[:-3], '\s*$', '', '')  . '></' . tag_name . '>'
+      let content = content[:-3] . '></' . tag_name . '>'
       call emmet#util#setContent(block, content)
       call setpos('.', [0, block[0][0], block[0][1], 0])
       return
@@ -899,7 +802,7 @@ function! emmet#lang#html#splitJoinTag() abort
       let block = [pos1, pos2]
       let content = emmet#util#getContent(block)
       if emmet#util#pointInRegion(curpos[1:2], block) && content[1:] !~# '<' . tag_name . '[^a-zA-Z0-9]*[^>]*>'
-        let content = matchstr(content, mx)[:-2] . ' />'
+        let content = matchstr(content, mx)[:-2] . '/>'
         call emmet#util#setContent(block, content)
         call setpos('.', [0, block[0][0], block[0][1], 0])
         return
