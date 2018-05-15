@@ -1,3 +1,8 @@
+" 关闭方向键盘
+noremap <Up> <Nop>
+noremap <Down> <Nop>
+noremap <Left> <Nop>
+noremap <Right> <Nop>
 " 主题
 colors zenburn
 " 256配色
