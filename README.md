@@ -9,9 +9,13 @@ sudo apt install vim exuberant-ctags
 
 ### 说明
 
+##### 主题
+# zenburn
+```
+
 ##### 颜色显示
 ```
-colorizer
+# colorizer
 ```
 
 ##### 自动补全
