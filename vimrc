@@ -1,8 +1,8 @@
 " 关闭方向键盘
-noremap <Up> <Nop>
-noremap <Down> <Nop>
-noremap <Left> <Nop>
-noremap <Right> <Nop>
+"noremap <Up> <Nop>
+"noremap <Down> <Nop>
+"noremap <Left> <Nop>
+"noremap <Right> <Nop>
 " 主题
 colors zenburn
 " 256配色
@@ -37,8 +37,8 @@ set shiftwidth=4
 " set expandtab
 " %retab!
 " TAB替换为空格
-" set noexpandtab
-" %retab!
+set noexpandtab
+%retab!
 " 让 vim 把连续数量的空格视为一个制表符
 " set softtabstop=4
 " vim 显示空格
@@ -69,6 +69,8 @@ filetype on
 set nocompatible
 " vim 命令行模式智能补全
 set wildmenu
+" 粘贴格式不变
+set paste
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Ignore compiled files
 set wildignore=*.o,*~,*.pyc

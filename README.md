@@ -1,6 +1,9 @@
 # my-vim-config
 
-ububtu:`sudo apt installexuberant-ctags`
+```
+# Ububtu/Debian
+sudo apt install vim exuberant-ctags
+```
 
 颜色显示:`colorizer`
 
