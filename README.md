@@ -10,6 +10,7 @@ sudo apt install vim exuberant-ctags
 ### 说明
 
 ##### 主题
+```
 # zenburn
 ```
 
