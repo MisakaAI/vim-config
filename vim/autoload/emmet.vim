@@ -936,8 +936,8 @@ endfunction
 unlet! s:emmet_settings
 let s:emmet_settings = {
 \    'variables': {
-\      'lang': "en",
-\      'locale': "en-US",
+\      'lang': "zh-cmn-Hans",
+\      'locale': "zh-CN",
 \      'charset': "UTF-8",
 \      'newline': "\n",
 \      'use_selection': 0,
@@ -1627,6 +1627,8 @@ let s:emmet_settings = {
 \                    ."<html lang=\"${lang}\">\n"
 \                    ."<head>\n"
 \                    ."\t<meta charset=\"${charset}\">\n"
+\                    ."\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n"
+\                    ."\t<meta http-equiv=\"X-UA-Compatible\" content=\"ie=edge,chrome=1\">\n"
 \                    ."\t<title></title>\n"
 \                    ."</head>\n"
 \                    ."<body>\n\t${child}|\n</body>\n"
@@ -1645,6 +1647,8 @@ let s:emmet_settings = {
 \            'del': {'datetime': '${datetime}'},
 \            'ins': {'datetime': '${datetime}'},
 \            'link:css': [{'rel': 'stylesheet'}, g:emmet_html5 ? {} : {'type': 'text/css'}, {'href': '|style.css'}, {'media': 'all'}],
+\            'link:pc': [{'rel': 'stylesheet'}, g:emmet_html5 ? {} : {'type': 'text/css'}, {'href': '|style.css'}, {'media': 'screen and (max-width:800px)'}],
+\            'link:m': [{'rel': 'stylesheet'}, g:emmet_html5 ? {} : {'type': 'text/css'}, {'href': '|style_mobile.css'}, {'media': 'screen and (min-width:801px)'}],
 \            'link:print': [{'rel': 'stylesheet'}, g:emmet_html5 ? {} : {'type': 'text/css'}, {'href': '|print.css'}, {'media': 'print'}],
 \            'link:import': [{'rel': 'import'}, {'href': '|.html'}],
 \            'link:im': [{'rel': 'import'}, {'href': '|.html'}],

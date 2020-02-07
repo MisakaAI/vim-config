@@ -69,8 +69,6 @@ filetype on
 set nocompatible
 " vim 命令行模式智能补全
 set wildmenu
-" 粘贴格式不变
-set paste
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Ignore compiled files
 set wildignore=*.o,*~,*.pyc
