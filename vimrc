@@ -34,13 +34,13 @@ set tabstop=4
 " 设置格式化时制表符占用空格数
 set shiftwidth=4
 " 用空格代替Tab
-" set expandtab
+set expandtab
 " %retab!
 " TAB替换为空格
-set noexpandtab
+" set noexpandtab
 %retab!
 " 让 vim 把连续数量的空格视为一个制表符
-" set softtabstop=4
+set softtabstop=4
 " vim 显示空格
 " set list
 " set listchars=tab:>-,trail:-
