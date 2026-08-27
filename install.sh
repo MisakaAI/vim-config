@@ -18,3 +18,7 @@ rm nvim-linux-x86_64.tar.gz
 
 # echo 'export PATH="$PATH:/opt/nvim-linux-x86_64/bin"' >> /etc/zsh/zshrc
 sudo ln -s /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+
+# 语法解析与高亮依赖
+npm install -g tree-sitter-cli
+tree-sitter --version

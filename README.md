@@ -25,7 +25,13 @@ require("config.lazy")
     │   └── lazy.lua       # lazy.nvim 的安装与初始化
     └── plugins
         ├── init.lua        # 插件规格入口
-        └── colorscheme.lua # 主题插件配置
+        ├── colorscheme.lua # 主题插件配置
+        ├── completion.lua  # 自动补全
+        ├── filetree.lua    # 文件树
+        ├── git.lua         # Git 变更提示与操作
+        ├── statusline.lua  # 状态栏
+        ├── treesitter.lua  # 语法解析与高亮
+        └── which-key.lua   # 快捷键提示
 ```
 
 ## 使用方式
@@ -37,6 +43,10 @@ require("config.lazy")
 
 - 已安装支持 Lua 配置的 Neovim 版本。
 - 已安装 Git，且首次启动时能够访问 GitHub，以便自动下载 lazy.nvim。
+- Treesitter `main` 分支需要 Neovim 0.12+、`tree-sitter-cli` 0.26.1+、`tar`、`curl`
+  和 C 编译器。当前 `install.sh` 使用 `npm install -g tree-sitter-cli` 安装 CLI；安装后可用
+  `tree-sitter --version` 检查版本，输出版本应不低于 0.26.1。
+- 如需正常显示文件图标和补全类型图标，终端应使用 Nerd Font。
 - 系统存在 Neovim 可用的剪贴板工具；可通过 `:checkhealth provider` 检查。
 - 系统已配置 `zh_CN.UTF-8` locale。中文帮助还需要单独安装中文帮助文档；没有中文文档时，
   Neovim 会根据可用情况显示其他语言的帮助。
@@ -99,6 +109,88 @@ return {
 
 这样可以避免左侧栏残留不透明色块，使整个编辑区的透明效果保持一致。终端本身的背景和
 透明度仍需在所使用的终端模拟器中设置。
+
+### 文件树：nvim-tree
+
+[nvim-tree.lua](https://github.com/nvim-tree/nvim-tree.lua) 提供目录浏览、文件操作、Git
+状态和诊断信息展示，并使用 `nvim-web-devicons` 显示文件图标。配置已在 Neovim 启动早期
+禁用 netrw，nvim-tree 本身则在首次调用命令或快捷键时加载。
+
+| 操作 | 用法 |
+| --- | --- |
+| 打开或关闭文件树 | `<Leader>e` 或 `:NvimTreeToggle` |
+| 打开并聚焦文件树 | `:NvimTreeFocus` |
+| 在文件树中定位当前文件 | `:NvimTreeFindFile` |
+| 收起所有目录 | `:NvimTreeCollapse` |
+| 查看文件树内全部按键 | 在文件树窗口中按 `g?` |
+
+### 语法解析：nvim-treesitter
+
+[nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) 提供语言解析器管理及
+Tree-sitter 查询，Neovim 使用它们实现结构化语法高亮、语言注入等功能。本配置使用官方
+最新的 `main` 分支：插件不延迟加载，更新插件后自动执行 `:TSUpdate`，打开文件时会尝试
+通过 `vim.treesitter.start()` 启用已安装解析器的高亮。
+
+`install.sh` 负责安装 Tree-sitter CLI，但不会替用户决定所需语言。首次完成 `:Lazy sync`
+后，在 Neovim 中执行以下命令安装本配置常用的解析器：
+
+```vim
+:TSInstall lua vim vimdoc bash c markdown markdown_inline
+```
+
+使用 `:TSUpdate` 更新已经安装的解析器。解析器安装失败时，请先确认
+`tree-sitter --version` 不低于 0.26.1，并检查 `tar`、`curl` 和 C 编译器是否可用。
+
+### 状态栏：lualine
+
+[lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) 在底部显示当前模式、Git 分支、
+文件名、诊断数量、编码、文件类型和光标位置等状态。本配置使用 `theme = "auto"` 自动适配
+Kanagawa，并启用 nvim-tree 扩展，使文件树窗口中的状态栏保持协调。该插件无需额外按键。
+
+### Git 集成：gitsigns
+
+[gitsigns.nvim](https://github.com/lewis6991/gitsigns.nvim) 在标记列中显示新增、修改和删除的
+行，并支持按变更块预览、暂存、还原、比较与查看 blame 信息。相关按键只在 Gitsigns 已附加
+的 Git 文件缓冲区中生效。
+
+| 按键 | 作用 |
+| --- | --- |
+| `]c` / `[c` | 跳到下一个/上一个变更块；diff 模式下保留 Neovim 原行为。 |
+| `<Leader>hs` / `<Leader>hr` | 暂存/还原当前变更块；可视模式下作用于选中行。 |
+| `<Leader>hS` / `<Leader>hR` | 暂存/还原当前缓冲区的全部变更。 |
+| `<Leader>hp` / `<Leader>hi` | 弹窗预览/行内预览当前变更块。 |
+| `<Leader>hb` | 显示当前行的完整 Git blame 信息。 |
+| `<Leader>hd` | 比较当前文件与 Git 索引。 |
+| `ih` | 在操作符等待或可视模式中选择当前变更块。 |
+
+### 快捷键提示：which-key
+
+[which-key.nvim](https://github.com/folke/which-key.nvim) 会在输入快捷键前缀后显示后续可用按键，
+帮助发现和记忆映射。它会自动读取 `vim.keymap.set()` 的 `desc`，并将 `<Leader>h` 标记为
+“Git 变更块”分组。按 `<Leader>?` 可立即查看当前缓冲区的局部快捷键；故障排查可运行
+`:checkhealth which-key`。
+
+### 自动补全：blink.cmp
+
+[blink.cmp](https://github.com/saghen/blink.cmp) 提供 LSP、路径、代码片段和当前缓冲区内容
+补全，并支持容错模糊匹配。上游当前正在开发存在大量破坏性变更的 V2，因此本配置按其建议
+锁定 `branch = "v1"`，并使用 `friendly-snippets` 补充常见代码片段。模糊匹配器优先使用
+Rust 实现，不可用时回退到 Lua 实现并显示提示。
+
+本配置采用官方 `default` 键位预设：
+
+| 按键 | 作用 |
+| --- | --- |
+| `<C-Space>` | 打开补全菜单；菜单已打开时切换候选项文档。 |
+| `<C-n>` / `<C-p>` | 选择下一个/上一个候选项。 |
+| `↓` / `↑` | 选择下一个/上一个候选项。 |
+| `<C-y>` | 接受当前候选项。 |
+| `<C-e>` | 关闭补全菜单。 |
+| `<C-b>` / `<C-f>` | 向上/向下滚动候选项文档。 |
+| `<Tab>` / `<S-Tab>` | 跳到下一个/上一个代码片段占位符。 |
+
+默认不会自动弹出候选项文档；需要时可按 `<C-Space>` 手动查看。Blink 能提供 LSP 候选项，
+但仍需要另外安装并配置相应语言服务器。
 
 ## 基础选项说明
 
