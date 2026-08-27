@@ -18,11 +18,13 @@ require("config.lazy")
 .
 ├── init.lua
 └── lua
-    └── config
-        ├── options.lua    # 基础选项与全局变量
-        ├── keymaps.lua    # 快捷键映射
-        ├── autocmds.lua   # 自动命令
-        └── lazy.lua       # 插件管理器及插件配置入口
+    ├── config
+    │   ├── options.lua    # 基础选项与全局变量
+    │   ├── keymaps.lua    # 快捷键映射
+    │   ├── autocmds.lua   # 自动命令
+    │   └── lazy.lua       # lazy.nvim 的安装与初始化
+    └── plugins
+        └── init.lua       # 插件规格入口
 ```
 
 ## 使用方式
@@ -33,10 +35,44 @@ require("config.lazy")
 启动前建议确认：
 
 - 已安装支持 Lua 配置的 Neovim 版本。
+- 已安装 Git，且首次启动时能够访问 GitHub，以便自动下载 lazy.nvim。
 - 系统存在 Neovim 可用的剪贴板工具；可通过 `:checkhealth provider` 检查。
 - 系统已配置 `zh_CN.UTF-8` locale。中文帮助还需要单独安装中文帮助文档；没有中文文档时，
   Neovim 会根据可用情况显示其他语言的帮助。
 - 插件配置中包含用于替代 netrw 的文件树插件，否则禁用 netrw 后将无法使用其目录浏览功能。
+
+## 插件管理
+
+本配置使用 [lazy.nvim](https://github.com/folke/lazy.nvim) 管理插件。启动时，
+`lua/config/lazy.lua` 会检查 Neovim 数据目录中是否已经存在 lazy.nvim；如果不存在，
+便自动克隆其 `stable` 分支并加入运行时路径。插件规格由 `lua/plugins/` 目录统一导入。
+
+可以把每个插件或一组相关插件拆分成单独文件。例如，新建 `lua/plugins/example.lua`：
+
+```lua
+return {
+  {
+    "author/plugin-name",
+    config = function()
+      require("plugin-name").setup()
+    end,
+  },
+}
+```
+
+常用命令：
+
+| 命令 | 用途 |
+| --- | --- |
+| `:Lazy` | 打开插件管理界面。 |
+| `:Lazy install` | 安装尚未安装的插件。 |
+| `:Lazy update` | 更新插件并刷新锁定信息。 |
+| `:Lazy sync` | 同步安装、更新和清理操作。 |
+| `:Lazy clean` | 清理已从配置中移除的插件。 |
+| `:Lazy health` | 检查 lazy.nvim 的运行环境。 |
+
+首次添加插件规格并启动 Neovim 后，lazy.nvim 会负责下载插件，并在配置根目录生成
+`lazy-lock.json` 记录插件版本。建议将该文件提交到版本控制，以便在不同设备上复现相同版本。
 
 ## 基础选项说明
 
