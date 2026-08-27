@@ -24,7 +24,8 @@ require("config.lazy")
     │   ├── autocmds.lua   # 自动命令
     │   └── lazy.lua       # lazy.nvim 的安装与初始化
     └── plugins
-        └── init.lua       # 插件规格入口
+        ├── init.lua        # 插件规格入口
+        └── colorscheme.lua # 主题插件配置
 ```
 
 ## 使用方式
@@ -73,6 +74,31 @@ return {
 
 首次添加插件规格并启动 Neovim 后，lazy.nvim 会负责下载插件，并在配置根目录生成
 `lazy-lock.json` 记录插件版本。建议将该文件提交到版本控制，以便在不同设备上复现相同版本。
+
+### 当前主题
+
+当前使用 [kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim)，相关配置位于
+`lua/plugins/colorscheme.lua`：
+
+| 配置 | 作用 |
+| --- | --- |
+| `priority = 1000` | 提高主题插件的加载优先级，确保它早于大多数界面插件生效。 |
+| `lazy = false` | 启动 Neovim 时立即加载主题，避免先显示默认配色再切换造成闪屏。 |
+| `transparent = true` | 清除主题的主背景色，使终端背景能够透出。 |
+| `theme = "dragon"` | 默认使用颜色较深、对比度较柔和的 Dragon 风格。 |
+| `background.dark = "dragon"` | 当 `background=dark` 时使用 Dragon 主题。 |
+| `background.light = "lotus"` | 当 `background=light` 时切换到 Lotus 亮色主题。 |
+| `colorscheme kanagawa` | 加载 Kanagawa，并根据上述背景映射选择具体风格。 |
+
+主题加载完成后，还会将以下高亮组的背景显式设为 `NONE`：
+
+- `LineNr`：普通行号。
+- `SignColumn`：诊断、Git 标记等符号所在列。
+- `FoldColumn`：代码折叠提示列。
+- `CursorLineNr`：当前光标所在行的行号。
+
+这样可以避免左侧栏残留不透明色块，使整个编辑区的透明效果保持一致。终端本身的背景和
+透明度仍需在所使用的终端模拟器中设置。
 
 ## 基础选项说明
 
