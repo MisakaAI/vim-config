@@ -5,6 +5,8 @@ return {
     opts = {
       spec = {
         { "<leader>h", group = "Git 变更块" },
+        { "<leader>l", group = "LSP" },
+        { "<leader>t", group = "终端" },
       },
     },
     keys = {

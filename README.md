@@ -29,7 +29,9 @@ require("config.lazy")
         ├── completion.lua  # 自动补全
         ├── filetree.lua    # 文件树
         ├── git.lua         # Git 变更提示与操作
+        ├── lsp.lua         # Python/C/C++ 语言服务器
         ├── statusline.lua  # 状态栏
+        ├── terminal.lua    # 浮动终端与 F5 运行入口
         ├── treesitter.lua  # 语法解析与高亮
         └── which-key.lua   # 快捷键提示
 ```
@@ -43,6 +45,7 @@ require("config.lazy")
 
 - 已安装支持 Lua 配置的 Neovim 版本。
 - 已安装 Git，且首次启动时能够访问 GitHub，以便自动下载 lazy.nvim。
+- F5 运行需要系统中存在 `python3`、`cc` 和 `c++` 中对应当前语言的命令。
 - Treesitter `main` 分支需要 Neovim 0.12+、`tree-sitter-cli` 0.26.1+、`tar`、`curl`
   和 C 编译器。当前 `install.sh` 使用 `npm install -g tree-sitter-cli` 安装 CLI；安装后可用
   `tree-sitter --version` 检查版本，输出版本应不低于 0.26.1。
@@ -135,7 +138,7 @@ Tree-sitter 查询，Neovim 使用它们实现结构化语法高亮、语言注�
 后，在 Neovim 中执行以下命令安装本配置常用的解析器：
 
 ```vim
-:TSInstall lua vim vimdoc bash c markdown markdown_inline
+:TSInstall lua vim vimdoc bash c cpp python markdown markdown_inline
 ```
 
 使用 `:TSUpdate` 更新已经安装的解析器。解析器安装失败时，请先确认
@@ -190,7 +193,56 @@ Rust 实现，不可用时回退到 Lua 实现并显示提示。
 | `<Tab>` / `<S-Tab>` | 跳到下一个/上一个代码片段占位符。 |
 
 默认不会自动弹出候选项文档；需要时可按 `<C-Space>` 手动查看。Blink 能提供 LSP 候选项，
-但仍需要另外安装并配置相应语言服务器。
+其候选项来自下一节配置的语言服务器。
+
+### LSP：Python 与 C/C++
+
+[nvim-lspconfig](https://github.com/neovim/nvim-lspconfig) 负责配置 Neovim 内置 LSP 客户端，
+[mason.nvim](https://github.com/mason-org/mason.nvim) 和 `mason-lspconfig.nvim` 负责安装并启用
+语言服务器。本配置会自动确保以下服务器可用：
+
+| 文件类型 | 语言服务器 | 说明 |
+| --- | --- | --- |
+| Python | `basedpyright` | 使用 `standard` 类型检查模式。 |
+| C / C++ | `clangd` | 启用后台索引、clang-tidy 和详细补全。 |
+
+首次打开对应文件时 Mason 会下载缺少的服务器；可用 `:Mason` 查看安装状态。`clangd` 对单文件
+可以直接提供基础功能，在实际 C/C++ 项目中建议由构建系统生成 `compile_commands.json`，以便它
+获得准确的头文件路径和编译参数。
+
+LSP 附加到缓冲区后可使用以下按键：
+
+| 按键 | 作用 |
+| --- | --- |
+| `gd` / `gD` | 跳转到定义/声明。 |
+| `gr` / `gi` | 查看引用/跳转到实现。 |
+| `K` | 显示光标下符号的文档。 |
+| `<Leader>lr` | 重命名符号。 |
+| `<Leader>la` | 执行代码操作。 |
+| `<Leader>lf` | 格式化当前缓冲区。 |
+| `<Leader>ld` | 显示当前行的诊断。 |
+| `[d` / `]d` | 跳到上一个/下一个诊断。 |
+
+### F5 编译运行与浮动终端
+
+[toggleterm.nvim](https://github.com/akinsho/toggleterm.nvim) 提供一个可复用的浮动终端。普通模式下
+按 `<F5>` 会先保存当前文件，再按文件类型执行：
+
+| 文件类型 | 执行方式 |
+| --- | --- |
+| Python | `python3 当前文件` |
+| C | `cc -std=c17 -Wall -Wextra -g` 编译后运行。 |
+| C++ | `c++ -std=c++17 -Wall -Wextra -g` 编译后运行。 |
+
+C/C++ 可执行文件保存在 Neovim 的缓存目录 `compile-run/` 中，不会写入源码目录。当前 F5 功能
+定位为单文件快速运行；多源文件项目仍应使用 Make、CMake 等项目构建命令。
+
+| 按键 | 作用 |
+| --- | --- |
+| `<F5>` | 保存、编译并运行当前 Python/C/C++ 文件。 |
+| `<Leader><F5>` | 调试运行；Python 会使用 `python3 -i`，执行结束后保留交互解释器。 |
+| `<Leader>tt` | 打开或关闭同一个浮动终端。 |
+| `<Esc><Esc>` | 在浮动终端中退出输入模式，回到终端普通模式。 |
 
 ## 基础选项说明
 
